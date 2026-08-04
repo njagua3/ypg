@@ -33,7 +33,11 @@ import {
   INITIAL_CATEGORIES,
   INITIAL_LISTINGS,
   INITIAL_PRODUCTS,
-  INITIAL_BLOGS
+  INITIAL_BLOGS,
+  INITIAL_USERS,
+  INITIAL_BLOGGER_PROFILES,
+  INITIAL_WITHDRAWALS,
+  INITIAL_SETTINGS
 } from './data/mockData';
 import {
   Search,
@@ -149,52 +153,119 @@ export default function App() {
     fetchData();
   }, [currentUser.id]);
 
-  // Fetch Blogger Dashboard when tab changes
+  // Fetch Blogger Dashboard & Admin Stats with static Vercel fallback support
   useEffect(() => {
     if (currentTab === 'blogger_dashboard') {
       fetch('/api/blogger/dashboard', { headers: { 'x-user-id': currentUser.id } })
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error('API unreachable');
+          return res.json();
+        })
         .then((data) => setBloggerDashboardData(data))
-        .catch(console.error);
+        .catch(() => {
+          const matchedProfile = INITIAL_BLOGGER_PROFILES.find((p) => p.userId === currentUser.id) || {
+            userId: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+            avatarUrl: currentUser.avatarUrl,
+            status: currentUser.bloggerStatus || 'pending',
+            bio: currentUser.bio || 'Content creator & adult industry blogger.',
+            totalViews: 12400,
+            totalClicks: 1850,
+            ctr: 14.9,
+            estimatedEarnings: 37.00,
+            availableBalance: 25.00,
+            pendingEarnings: 12.00,
+            paidEarnings: 80.00,
+            registrationDate: currentUser.createdAt || '2026-08-01'
+          };
+          setBloggerDashboardData({
+            profile: matchedProfile,
+            blogs: blogs.filter((b) => b.authorId === currentUser.id || currentUser.role === 'blogger'),
+            withdrawals: INITIAL_WITHDRAWALS.filter((w) => w.userId === currentUser.id || currentUser.id === 'usr-blogger-1'),
+            recentClicks: [],
+            payPerClickRate: INITIAL_SETTINGS.payPerClickRate,
+            minimumWithdrawal: INITIAL_SETTINGS.minimumWithdrawal
+          });
+        });
     } else if (currentTab === 'admin_dashboard') {
       fetch('/api/admin/stats', { headers: { 'x-user-id': currentUser.id } })
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error('API unreachable');
+          return res.json();
+        })
         .then((data) => setAdminStats(data))
-        .catch(console.error);
+        .catch(() => {
+          setAdminStats({
+            totalUsers: INITIAL_USERS.length + 1416,
+            approvedBloggersCount: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'approved').length + 42,
+            pendingBloggersCount: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'pending').length,
+            totalListingsCount: listings.length,
+            pendingListingsCount: listings.filter((l) => l.isApproved === false).length,
+            totalBlogsCount: blogs.length,
+            totalClicks: 84920,
+            totalPayouts: 1698.40,
+            users: INITIAL_USERS,
+            listings: listings,
+            withdrawals: INITIAL_WITHDRAWALS,
+            settings: INITIAL_SETTINGS
+          });
+        });
     }
-  }, [currentTab, currentUser.id]);
+  }, [currentTab, currentUser, blogs, listings]);
 
-  // Handle Role Switching
+  // Handle Role Switching with instantaneous local fallback for static hosts (Vercel)
   const handleSwitchRole = async (role: 'visitor' | 'blogger' | 'admin' | 'pending_blogger') => {
-    try {
-      let targetRole = role === 'pending_blogger' ? 'blogger' : role;
-      let email = undefined;
-      if (role === 'pending_blogger') {
-        email = 'marcus.vance@creator.org';
-      } else if (role === 'blogger') {
-        email = 'alex.mercer@blogger.com';
-      } else if (role === 'admin') {
-        email = 'admin@yourpornguy.com';
-      }
+    let targetRole = role === 'pending_blogger' ? 'blogger' : role;
+    let email = undefined;
+    if (role === 'pending_blogger') {
+      email = 'marcus.vance@creator.org';
+    } else if (role === 'blogger') {
+      email = 'alex.mercer@blogger.com';
+    } else if (role === 'admin') {
+      email = 'admin@yourpornguy.com';
+    }
 
+    try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: targetRole, email })
-      });
-      const data = await res.json();
-      if (data.user) {
-        setCurrentUser(data.user);
-        if (data.user.role === 'admin') {
-          setCurrentTab('admin_dashboard');
-        } else if (data.user.role === 'blogger') {
-          setCurrentTab('blogger_dashboard');
-        } else {
-          setCurrentTab('home');
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.user) {
+          setCurrentUser(data.user);
+          if (data.user.role === 'admin') {
+            setCurrentTab('admin_dashboard');
+          } else if (data.user.role === 'blogger') {
+            setCurrentTab('blogger_dashboard');
+          } else {
+            setCurrentTab('home');
+          }
+          return;
         }
       }
     } catch (err) {
-      console.error('Error switching role:', err);
+      console.warn('Backend login endpoint unavailable, applying local role switch:', err);
+    }
+
+    // Static client fallback (e.g., Vercel)
+    let fallbackUser = INITIAL_USERS.find((u) => {
+      if (role === 'pending_blogger') return u.id === 'usr-blogger-pending';
+      if (role === 'blogger') return u.id === 'usr-blogger-1';
+      if (role === 'admin') return u.id === 'usr-admin-1';
+      return u.id === 'usr-visitor-1';
+    }) || INITIAL_USERS[0];
+
+    setCurrentUser(fallbackUser);
+    if (fallbackUser.role === 'admin') {
+      setCurrentTab('admin_dashboard');
+    } else if (fallbackUser.role === 'blogger') {
+      setCurrentTab('blogger_dashboard');
+    } else {
+      setCurrentTab('home');
     }
   };
 

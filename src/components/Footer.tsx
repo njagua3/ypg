@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Sparkles, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
-import logoImg from '../assets/logo.jpg';
+import { LOGO_DATA_URI } from '../assets/logoData';
 
 interface FooterProps {
   setCurrentTab: (tab: string) => void;
@@ -29,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentTab, onOpenSEOModal })
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden border border-[#ff7a00] bg-black">
                 <img
-                  src={logoImg}
+                  src={LOGO_DATA_URI}
                   alt="Your Porn Guy Logo"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
