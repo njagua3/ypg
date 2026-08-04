@@ -30,6 +30,12 @@ import {
   SubmitListingPayload
 } from './types';
 import {
+  INITIAL_CATEGORIES,
+  INITIAL_LISTINGS,
+  INITIAL_PRODUCTS,
+  INITIAL_BLOGS
+} from './data/mockData';
+import {
   Search,
   Filter,
   Sparkles,
@@ -50,11 +56,11 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortOption, setSortOption] = useState<string>('featured');
 
-  // App Data State from API
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  // App Data State initialized with mockData fallbacks for reliable static and online loading
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [blogs, setBlogs] = useState<BlogPost[]>(INITIAL_BLOGS);
   const [currentUser, setCurrentUser] = useState<User>({
     id: 'usr-visitor-1',
     name: 'Guest Visitor',
@@ -95,30 +101,47 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Fetch initial data
+  // Safely fetch initial data if backend API is present, gracefully retaining fallback mock data if static
   const fetchData = async () => {
     try {
+      const catReq = fetch('/api/categories').catch(() => null);
+      const listReq = fetch('/api/listings').catch(() => null);
+      const prodReq = fetch('/api/products').catch(() => null);
+      const blogReq = fetch('/api/blogs').catch(() => null);
+      const userReq = fetch('/api/users/current', { headers: { 'x-user-id': currentUser.id } }).catch(() => null);
+
       const [catRes, listRes, prodRes, blogRes, userRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/listings'),
-        fetch('/api/products'),
-        fetch('/api/blogs'),
-        fetch('/api/users/current', { headers: { 'x-user-id': currentUser.id } })
+        catReq,
+        listReq,
+        prodReq,
+        blogReq,
+        userReq
       ]);
 
-      const catData = await catRes.json();
-      const listData = await listRes.json();
-      const prodData = await prodRes.json();
-      const blogData = await blogRes.json();
-      const userData = await userRes.json();
-
-      setCategories(catData || []);
-      setListings(listData.listings || []);
-      setProducts(prodData || []);
-      setBlogs(blogData || []);
-      if (userData.user) setCurrentUser(userData.user);
+      if (catRes && catRes.ok) {
+        const catData = await catRes.json().catch(() => null);
+        if (Array.isArray(catData) && catData.length > 0) setCategories(catData);
+      }
+      if (listRes && listRes.ok) {
+        const listData = await listRes.json().catch(() => null);
+        if (listData && Array.isArray(listData.listings) && listData.listings.length > 0) {
+          setListings(listData.listings);
+        }
+      }
+      if (prodRes && prodRes.ok) {
+        const prodData = await prodRes.json().catch(() => null);
+        if (Array.isArray(prodData) && prodData.length > 0) setProducts(prodData);
+      }
+      if (blogRes && blogRes.ok) {
+        const blogData = await blogRes.json().catch(() => null);
+        if (Array.isArray(blogData) && blogData.length > 0) setBlogs(blogData);
+      }
+      if (userRes && userRes.ok) {
+        const userData = await userRes.json().catch(() => null);
+        if (userData && userData.user) setCurrentUser(userData.user);
+      }
     } catch (err) {
-      console.error('Error fetching API data:', err);
+      console.warn('Backend API endpoint unreachable, using local fallback data:', err);
     }
   };
 
