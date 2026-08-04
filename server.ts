@@ -838,13 +838,66 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  app.post('/api/admin/listings/create', (req, res) => {
+    const payload = req.body;
+    if (!payload.name || !payload.websiteUrl || !payload.categoryId) {
+      return res.status(400).json({ error: 'Name, website URL, and category are required.' });
+    }
+
+    const category = db.categories.find((c) => c.id === payload.categoryId);
+    const slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const newListing: Listing = {
+      id: `lst-${Date.now()}`,
+      name: payload.name,
+      slug: `${slug}-${Math.floor(Math.random() * 1000)}`,
+      logoUrl: payload.logoUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&h=120&q=80',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80',
+      description: payload.description || 'Verified adult platform in YPG directory.',
+      fullDescription: payload.fullDescription || payload.description || 'Verified platform curated and published directly by Admin.',
+      categoryId: payload.categoryId,
+      categoryName: category ? category.name : 'Directory Listing',
+      rating: Number(payload.rating) || 4.8,
+      editorScore: Number(payload.editorScore) || 92,
+      userRatingCount: 1,
+      primaryAffiliateUrl: payload.primaryAffiliateUrl || payload.websiteUrl,
+      secondaryAffiliateUrl: payload.secondaryAffiliateUrl || '',
+      pros: payload.pros || ['Verified by Admin', 'High Speed Content', 'Safe & Secure'],
+      cons: payload.cons || ['Premium Membership required for full access'],
+      tags: payload.tags || ['Admin Verified', category ? category.name : 'Web'],
+      gallery: ['https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=800&h=450&q=80'],
+      popularityScore: 80,
+      isSponsored: !!payload.isSponsored,
+      isVerified: true,
+      isApproved: true, // DIRECTLY APPROVED BY ADMIN
+      dateAdded: new Date().toISOString().split('T')[0],
+      pricingType: payload.pricingType || 'Freemium',
+      websiteUrl: payload.websiteUrl
+    };
+
+    db.listings.unshift(newListing);
+    saveDatabase();
+
+    res.json({ success: true, message: 'Site created and published directly to directory!', listing: newListing });
+  });
+
   app.post('/api/admin/listings/:id/approve', (req, res) => {
     const listing = db.listings.find((l) => l.id === req.params.id);
     if (listing) {
       listing.isApproved = true;
+      listing.isVerified = true;
       saveDatabase();
     }
     res.json({ success: true, listing });
+  });
+
+  app.post('/api/admin/listings/:id/reject', (req, res) => {
+    const index = db.listings.findIndex((l) => l.id === req.params.id);
+    if (index !== -1) {
+      db.listings.splice(index, 1);
+      saveDatabase();
+    }
+    res.json({ success: true });
   });
 
   app.post('/api/admin/withdrawals/:id/approve', (req, res) => {

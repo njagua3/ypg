@@ -132,6 +132,19 @@ export const Header: React.FC<HeaderProps> = ({
                 <BookOpen className="w-4 h-4" />
                 Blog
               </button>
+              {currentUser.role === 'admin' && (
+                <button
+                  onClick={() => setCurrentTab('admin_dashboard')}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
+                    currentTab === 'admin_dashboard'
+                      ? 'bg-[#ff7a00] text-white font-bold'
+                      : 'text-[#ff7a00] bg-[#ff7a00]/10 hover:bg-[#ff7a00]/20 font-semibold'
+                  }`}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>Admin Panel</span>
+                </button>
+              )}
             </nav>
           </div>
 
@@ -286,11 +299,12 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       onClick={() => {
                         onSwitchRole('admin');
+                        setCurrentTab('admin_dashboard');
                         setShowRoleDropdown(false);
                       }}
                       className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-between text-zinc-700 dark:text-zinc-300"
                     >
-                      <span className="font-semibold text-[#ff7a00]">Admin CMS</span>
+                      <span className="font-semibold text-[#ff7a00]">Admin Panel</span>
                       {currentUser.role === 'admin' && <CheckCircle2 className="w-3.5 h-3.5 text-[#ff7a00]" />}
                     </button>
                   </div>
@@ -305,20 +319,6 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-3 py-2 rounded-lg bg-[#ff7a00]/10 text-[#ff7a00] font-semibold hover:bg-[#ff7a00]/20 text-center block"
                       >
                         Open Blogger Dashboard
-                      </button>
-                    </div>
-                  )}
-
-                  {currentUser.role === 'admin' && (
-                    <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                      <button
-                        onClick={() => {
-                          setCurrentTab('admin_dashboard');
-                          setShowRoleDropdown(false);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-lg bg-[#ff7a00] text-white font-semibold hover:bg-orange-600 text-center block shadow-sm"
-                      >
-                        Open Admin Panel
                       </button>
                     </div>
                   )}
@@ -400,7 +400,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Shield className="w-3.5 h-3.5 text-[#ff7a00]" />
-              <span>Admin CMS</span>
+              <span>Admin Panel</span>
             </button>
           )}
           {currentUser.role === 'blogger' && (

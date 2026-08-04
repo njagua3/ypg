@@ -735,6 +735,7 @@ export default function App() {
         {currentTab === 'admin_dashboard' && adminStats && (
           <AdminDashboard
             stats={adminStats}
+            categories={categories}
             onApproveBlogger={async (id) => {
               setAdminStats((prev: any) => {
                 if (!prev) return prev;
@@ -782,7 +783,41 @@ export default function App() {
               });
               try {
                 await fetch(`/api/admin/listings/${id}/approve`, { method: 'POST' });
+                fetchData();
               } catch (err) {}
+            }}
+            onRejectListing={async (id) => {
+              setAdminStats((prev: any) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  listings: (prev.listings || []).filter((l: Listing) => l.id !== id),
+                  pendingListings: Math.max(0, (prev.pendingListings || 1) - 1)
+                };
+              });
+              setListings((prev) => prev.filter((l) => l.id !== id));
+              try {
+                await fetch(`/api/admin/listings/${id}/reject`, { method: 'POST' });
+              } catch (err) {}
+            }}
+            onAddListingDirect={async (payload) => {
+              const res = await fetch('/api/admin/listings/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json();
+              if (data.success && data.listing) {
+                setListings((prev) => [data.listing, ...prev]);
+                setAdminStats((prev: any) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    listings: [data.listing, ...(prev.listings || [])],
+                    totalListings: (prev.totalListings || 0) + 1
+                  };
+                });
+              }
             }}
             onApproveWithdrawal={async (id) => {
               setAdminStats((prev: any) => {

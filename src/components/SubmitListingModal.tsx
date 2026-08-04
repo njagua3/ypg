@@ -56,10 +56,10 @@ export const SubmitListingModal: React.FC<SubmitListingModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-black text-zinc-900 dark:text-white">
-                Submit Your Adult Website / Platform
+                Submit Website for Admin Review
               </h2>
               <p className="text-xs text-zinc-500">
-                Get listed on Your Porn Guy directory reaching 500k+ monthly visitors.
+                All submissions require Admin review & approval before appearing in the directory.
               </p>
             </div>
           </div>
@@ -74,6 +74,7 @@ export const SubmitListingModal: React.FC<SubmitListingModalProps> = ({
               ✓
             </div>
             <p className="text-sm font-bold text-zinc-900 dark:text-white">{successMsg}</p>
+            <p className="text-xs text-zinc-500">Only authorized Admins can approve and publish submitted sites.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 pt-4 text-xs">

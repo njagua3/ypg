@@ -46,6 +46,28 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
 
+  // Dynamic live calculations from articles and withdrawal requests
+  const calculatedViews = Math.max(
+    profile.totalViews || 0,
+    blogs.reduce((sum, b) => sum + (b.views || 0), 0)
+  );
+
+  const calculatedClicks = Math.max(
+    profile.totalClicks || 0,
+    blogs.reduce((sum, b) => sum + (b.uniqueClicks || 0), 0)
+  );
+
+  const pendingWithdrawalSum = withdrawals
+    .filter((w) => w.status === 'pending')
+    .reduce((sum, w) => sum + w.amount, 0);
+
+  const approvedWithdrawalSum = withdrawals
+    .filter((w) => w.status === 'approved')
+    .reduce((sum, w) => sum + w.amount, 0);
+
+  const paidEarnings = Math.max(profile.paidEarnings || 0, approvedWithdrawalSum);
+  const pendingEarnings = pendingWithdrawalSum > 0 ? pendingWithdrawalSum : (profile.pendingEarnings || 0);
+
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentDetails.trim()) return;
@@ -162,7 +184,7 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
             <Eye className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="text-2xl font-black text-zinc-900 dark:text-white">
-            {profile.totalViews.toLocaleString()}
+            {calculatedViews.toLocaleString()}
           </div>
           <div className="text-[11px] text-zinc-500">Recorded article impressions</div>
         </div>
@@ -173,10 +195,10 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
             <MousePointer className="w-4 h-4 text-[#ff7a00]" />
           </div>
           <div className="text-2xl font-black text-zinc-900 dark:text-white">
-            {profile.totalClicks.toLocaleString()}
+            {calculatedClicks.toLocaleString()}
           </div>
           <div className="text-[11px] text-emerald-500 font-semibold">
-            CTR: {profile.ctr.toFixed(1)}%
+            CTR: {calculatedViews > 0 ? ((calculatedClicks / calculatedViews) * 100).toFixed(1) : profile.ctr.toFixed(1)}%
           </div>
         </div>
 
@@ -197,9 +219,9 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
             <CheckCircle2 className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-black text-zinc-900 dark:text-white">
-            ${profile.paidEarnings.toFixed(2)}
+            ${paidEarnings.toFixed(2)}
           </div>
-          <div className="text-[11px] text-zinc-500">Pending: ${profile.pendingEarnings.toFixed(2)}</div>
+          <div className="text-[11px] text-zinc-500">Pending: ${pendingEarnings.toFixed(2)}</div>
         </div>
 
       </div>
