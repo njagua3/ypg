@@ -67,6 +67,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               src={listing.logoUrl}
               alt={listing.name}
               className="w-9 h-9 rounded-xl object-cover border border-zinc-200 dark:border-zinc-700 bg-black"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&h=120&q=80';
+              }}
             />
             <div>
               <h2 className="text-lg font-black text-zinc-900 dark:text-white leading-tight">
@@ -108,6 +112,10 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             src={listing.thumbnailUrl}
             alt={listing.name}
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-[#18181b]/40 to-transparent" />
 
@@ -292,7 +300,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                   <div key={rev.id} className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <img src={rev.userAvatar} alt={rev.userName} className="w-6 h-6 rounded-full object-cover" />
+                        <img src={rev.userAvatar} alt={rev.userName} className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
                         <span className="font-bold text-zinc-900 dark:text-white">{rev.userName}</span>
                         {rev.verifiedUser && (
                           <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-500 font-semibold">Verified</span>
@@ -321,7 +329,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                     onClick={() => onSelectListing(rel)}
                     className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-[#ff7a00] text-left transition-all group"
                   >
-                    <img src={rel.logoUrl} alt={rel.name} className="w-8 h-8 rounded-lg object-cover mb-2" />
+                    <img src={rel.logoUrl} alt={rel.name} className="w-8 h-8 rounded-lg object-cover mb-2" referrerPolicy="no-referrer" />
                     <h4 className="text-xs font-bold text-zinc-900 dark:text-white group-hover:text-[#ff7a00] transition-colors line-clamp-1">{rel.name}</h4>
                     <p className="text-[10px] text-zinc-500">Score: {rel.editorScore}/100</p>
                   </button>

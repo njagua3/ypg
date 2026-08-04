@@ -81,6 +81,10 @@ export const BlogView: React.FC<BlogViewProps> = ({
               src={featured.coverImageUrl}
               alt={featured.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 lg:hidden" />
           </div>
@@ -105,7 +109,7 @@ export const BlogView: React.FC<BlogViewProps> = ({
 
             <div className="pt-4 border-t border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
               <div className="flex items-center gap-2">
-                <img src={featured.authorAvatar} alt={featured.authorName} className="w-7 h-7 rounded-full object-cover" />
+                <img src={featured.authorAvatar} alt={featured.authorName} className="w-7 h-7 rounded-full object-cover" referrerPolicy="no-referrer" />
                 <span className="font-bold text-white">{featured.authorName}</span>
               </div>
 
@@ -165,6 +169,10 @@ export const BlogView: React.FC<BlogViewProps> = ({
                   src={post.coverImageUrl}
                   alt={post.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+                  }}
                 />
                 <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/70 text-white text-[10px] font-bold backdrop-blur-md">
                   {post.category}
@@ -182,7 +190,7 @@ export const BlogView: React.FC<BlogViewProps> = ({
 
             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[11px] text-zinc-400 mt-4">
               <div className="flex items-center gap-1.5">
-                <img src={post.authorAvatar} alt={post.authorName} className="w-5 h-5 rounded-full object-cover" />
+                <img src={post.authorAvatar} alt={post.authorName} className="w-5 h-5 rounded-full object-cover" referrerPolicy="no-referrer" />
                 <span className="font-semibold text-zinc-700 dark:text-zinc-300">{post.authorName}</span>
               </div>
 

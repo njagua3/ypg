@@ -18,6 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { Category } from '../types';
+import logoImg from '../assets/logo.jpg';
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -64,9 +65,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           <div className="flex justify-center mb-1">
             <div className="relative group p-1 bg-black rounded-full border-2 border-[#ff7a00] shadow-xl shadow-[#ff7a00]/20 flex items-center gap-3 pr-4">
               <img
-                src="/logo.jpg"
+                src={logoImg}
                 alt="Your Porn Guy Logo"
                 className="w-12 h-12 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.jpg';
+                }}
               />
               <div className="text-left">
                 <span className="block text-xs font-black tracking-wider text-white uppercase">Your Porn Guy</span>

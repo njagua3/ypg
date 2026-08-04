@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Sparkles, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import logoImg from '../assets/logo.jpg';
 
 interface FooterProps {
   setCurrentTab: (tab: string) => void;
@@ -27,7 +28,15 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentTab, onOpenSEOModal })
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden border border-[#ff7a00] bg-black">
-                <img src="/logo.jpg" alt="Your Porn Guy Logo" className="w-full h-full object-cover" />
+                <img
+                  src={logoImg}
+                  alt="Your Porn Guy Logo"
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/logo.jpg';
+                  }}
+                />
               </div>
               <span className="text-lg font-black text-white">Your Porn Guy</span>
             </div>

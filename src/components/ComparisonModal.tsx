@@ -61,6 +61,10 @@ export const ComparisonModal: React.FC<ComparisonModalProps> = ({
                         src={item.logoUrl}
                         alt={item.name}
                         className="w-12 h-12 rounded-2xl object-cover border border-zinc-200 dark:border-zinc-700 bg-black"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&h=120&q=80';
+                        }}
                       />
                       <span className="font-extrabold text-sm text-zinc-900 dark:text-white line-clamp-1">
                         {item.name}

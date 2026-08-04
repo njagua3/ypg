@@ -17,6 +17,7 @@ import {
   Tv
 } from 'lucide-react';
 import { User as UserType } from '../types';
+import logoImg from '../assets/logo.jpg';
 
 interface HeaderProps {
   currentTab: string;
@@ -58,12 +59,12 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <div className="relative flex items-center justify-center w-11 h-11 rounded-full overflow-hidden border-2 border-[#ff7a00] shadow-lg shadow-[#ff7a00]/25 group-hover:scale-105 transition-transform bg-black">
                 <img
-                  src="/logo.jpg"
+                  src={logoImg}
                   alt="Your Porn Guy Logo"
                   className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
-                    // Fallback to text icon if image fails
-                    (e.target as HTMLElement).style.display = 'none';
+                    (e.target as HTMLImageElement).src = '/logo.jpg';
                   }}
                 />
               </div>
@@ -184,6 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
                   src={currentUser.avatarUrl}
                   alt={currentUser.name}
                   className="w-6 h-6 rounded-full object-cover border border-[#ff7a00]"
+                  referrerPolicy="no-referrer"
                 />
                 <div className="text-left hidden md:block">
                   <div className="font-semibold leading-none">{currentUser.name}</div>

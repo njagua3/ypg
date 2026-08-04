@@ -184,7 +184,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               stats.users.filter((u: User) => u.bloggerStatus === 'pending').map((u: User) => (
                 <div key={u.id} className="p-4 rounded-2xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <img src={u.avatarUrl} alt={u.name} className="w-10 h-10 rounded-full object-cover" />
+                    <img src={u.avatarUrl} alt={u.name} className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
                     <div>
                       <h4 className="font-bold text-sm text-zinc-900 dark:text-white">{u.name}</h4>
                       <p className="text-xs text-zinc-500">{u.email} • Bio: {u.bio}</p>
@@ -222,7 +222,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               stats.listings.filter((l: Listing) => l.isApproved === false).map((l: Listing) => (
                 <div key={l.id} className="p-4 rounded-2xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <img src={l.logoUrl} alt={l.name} className="w-10 h-10 rounded-xl object-cover bg-black" />
+                    <img
+                      src={l.logoUrl}
+                      alt={l.name}
+                      className="w-10 h-10 rounded-xl object-cover bg-black"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&h=120&q=80';
+                      }}
+                    />
                     <div>
                       <h4 className="font-bold text-sm text-zinc-900 dark:text-white">{l.name}</h4>
                       <p className="text-xs text-zinc-500">{l.categoryName} • URL: {l.websiteUrl}</p>

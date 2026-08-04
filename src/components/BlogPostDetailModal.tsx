@@ -100,6 +100,10 @@ export const BlogPostDetailModal: React.FC<BlogPostDetailModalProps> = ({
             src={blog.coverImageUrl}
             alt={blog.title}
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#18181b] via-[#18181b]/30 to-transparent" />
 
@@ -115,6 +119,7 @@ export const BlogPostDetailModal: React.FC<BlogPostDetailModalProps> = ({
                 src={blog.authorAvatar}
                 alt={blog.authorName}
                 className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                referrerPolicy="no-referrer"
               />
               <div className="text-xs text-white">
                 <p className="font-bold">{blog.authorName}</p>
@@ -213,7 +218,7 @@ export const BlogPostDetailModal: React.FC<BlogPostDetailModalProps> = ({
               {comments.map((cm) => (
                 <div key={cm.id} className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs space-y-1">
                   <div className="flex items-center gap-2">
-                    <img src={cm.userAvatar} alt={cm.userName} className="w-6 h-6 rounded-full object-cover" />
+                    <img src={cm.userAvatar} alt={cm.userName} className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
                     <span className="font-bold text-zinc-900 dark:text-white">{cm.userName}</span>
                     <span className="text-[10px] text-zinc-500">{cm.date}</span>
                   </div>

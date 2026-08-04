@@ -126,6 +126,10 @@ export const ShopView: React.FC<ShopViewProps> = ({
                 src={prod.imageUrl}
                 alt={prod.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+                }}
               />
 
               {/* Badges */}

@@ -75,6 +75,7 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
             src={profile.avatarUrl}
             alt={profile.name}
             className="w-16 h-16 rounded-2xl object-cover border-2 border-[#ff7a00]"
+            referrerPolicy="no-referrer"
           />
           <div>
             <div className="flex items-center gap-2">
@@ -178,7 +179,15 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
             {blogs.map((b) => (
               <div key={b.id} className="p-4 rounded-2xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <img src={b.coverImageUrl} alt={b.title} className="w-12 h-12 rounded-xl object-cover" />
+                  <img
+                    src={b.coverImageUrl}
+                    alt={b.title}
+                    className="w-12 h-12 rounded-xl object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+                    }}
+                  />
                   <div>
                     <h4 className="font-bold text-sm text-zinc-900 dark:text-white line-clamp-1">{b.title}</h4>
                     <p className="text-[11px] text-zinc-500">{b.category} • Published {b.publishedAt}</p>

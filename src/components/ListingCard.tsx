@@ -43,6 +43,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           alt={listing.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=600&h=380&q=80';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
@@ -88,6 +92,10 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               src={listing.logoUrl}
               alt={listing.name}
               className="w-10 h-10 rounded-xl object-cover border-2 border-white/20 bg-black shadow-md shrink-0"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=120&h=120&q=80';
+              }}
             />
             <div>
               <h3 className="text-base font-black leading-tight group-hover:text-[#ff7a00] transition-colors drop-shadow">
