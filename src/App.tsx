@@ -750,7 +750,10 @@ export default function App() {
                 };
               });
               try {
-                await fetch(`/api/admin/bloggers/${id}/approve`, { method: 'POST' });
+                await fetch(`/api/admin/bloggers/${id}/approve`, {
+                  method: 'POST',
+                  headers: { 'x-user-id': currentUser.id }
+                });
               } catch (err) {}
             }}
             onRejectBlogger={async (id) => {
@@ -766,7 +769,10 @@ export default function App() {
                 };
               });
               try {
-                await fetch(`/api/admin/bloggers/${id}/reject`, { method: 'POST' });
+                await fetch(`/api/admin/bloggers/${id}/reject`, {
+                  method: 'POST',
+                  headers: { 'x-user-id': currentUser.id }
+                });
               } catch (err) {}
             }}
             onApproveListing={async (id) => {
@@ -782,7 +788,10 @@ export default function App() {
                 };
               });
               try {
-                await fetch(`/api/admin/listings/${id}/approve`, { method: 'POST' });
+                await fetch(`/api/admin/listings/${id}/approve`, {
+                  method: 'POST',
+                  headers: { 'x-user-id': currentUser.id }
+                });
                 fetchData();
               } catch (err) {}
             }}
@@ -797,13 +806,19 @@ export default function App() {
               });
               setListings((prev) => prev.filter((l) => l.id !== id));
               try {
-                await fetch(`/api/admin/listings/${id}/reject`, { method: 'POST' });
+                await fetch(`/api/admin/listings/${id}/reject`, {
+                  method: 'POST',
+                  headers: { 'x-user-id': currentUser.id }
+                });
               } catch (err) {}
             }}
             onAddListingDirect={async (payload) => {
               const res = await fetch('/api/admin/listings/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-user-id': currentUser.id
+                },
                 body: JSON.stringify(payload)
               });
               const data = await res.json();
@@ -832,7 +847,10 @@ export default function App() {
                 };
               });
               try {
-                await fetch(`/api/admin/withdrawals/${id}/approve`, { method: 'POST' });
+                await fetch(`/api/admin/withdrawals/${id}/approve`, {
+                  method: 'POST',
+                  headers: { 'x-user-id': currentUser.id }
+                });
               } catch (err) {}
             }}
             onUpdateSettings={async (newSettings) => {
@@ -843,7 +861,10 @@ export default function App() {
               try {
                 await fetch('/api/admin/settings', {
                   method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': currentUser.id
+                  },
                   body: JSON.stringify(newSettings)
                 });
               } catch (err) {}

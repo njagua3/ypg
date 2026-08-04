@@ -113,13 +113,75 @@ loadDatabase();
 // Bot detection regex
 const BOT_REGEX = /bot|googlebot|crawler|spider|slurp|bingbot|yandex|headless|curl|wget|python|postman|phantomjs/i;
 
+// In-memory rate limiting store
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function createRateLimiter(maxRequests: number, windowMs: number) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const now = Date.now();
+    const record = rateLimitStore.get(ip) || { count: 0, resetTime: now + windowMs };
+
+    if (now > record.resetTime) {
+      record.count = 1;
+      record.resetTime = now + windowMs;
+    } else {
+      record.count += 1;
+    }
+
+    rateLimitStore.set(ip, record);
+
+    if (record.count > maxRequests) {
+      return res.status(429).json({ error: 'Too many requests. Rate limit exceeded for security.' });
+    }
+    next();
+  };
+}
+
+// Security input sanitization helpers
+function sanitizeText(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '')
+    .trim();
+}
+
+function isSafeUrl(url: string): boolean {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    (trimmed.startsWith('http://') || trimmed.startsWith('https://')) &&
+    !trimmed.includes('javascript:') &&
+    !trimmed.includes('data:')
+  );
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '10mb' }));
+  // Security Headers Middleware
+  app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+    next();
+  });
 
-  // Helper middleware for current user simulation header
+  app.use(express.json({ limit: '2mb' }));
+
+  // Rate limiters for sensitive endpoints
+  const apiLimiter = createRateLimiter(100, 60 * 1000); // 100 req/min
+  const submissionLimiter = createRateLimiter(15, 60 * 1000); // 15 req/min
+
+  app.use('/api/', apiLimiter);
+
+  // Helper middleware for user verification & Admin authorization
   let currentUserId = 'usr-visitor-1';
 
   app.use((req, res, next) => {
@@ -129,6 +191,16 @@ async function startServer() {
     }
     next();
   });
+
+  // Admin Verification Middleware
+  const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const requestUserId = (req.headers['x-user-id'] as string) || currentUserId;
+    const user = db.users.find((u) => u.id === requestUserId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Admin privilege authorization required.' });
+    }
+    next();
+  };
 
   // --- API ROUTES ---
 
