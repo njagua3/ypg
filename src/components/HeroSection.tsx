@@ -95,7 +95,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         </div>
 
         {/* Large Central Search Bar */}
-        <div className="mt-8 max-w-2xl mx-auto">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const el = document.getElementById('directory-grid');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="mt-8 max-w-2xl mx-auto"
+        >
           <div className="relative flex items-center shadow-2xl rounded-2xl border-2 border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-[#18181b] focus-within:border-[#ff7a00] transition-all overflow-hidden p-1.5">
             <div className="pl-3 text-zinc-400">
               <Search className="w-5 h-5 text-[#ff7a00]" />
@@ -109,6 +116,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
                 className="px-2 py-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
               >
@@ -116,7 +124,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </button>
             )}
             <button
-              className="px-5 py-2.5 bg-gradient-to-r from-[#ff7a00] to-orange-600 hover:opacity-95 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0"
+              type="submit"
+              className="px-5 py-2.5 bg-gradient-to-r from-[#ff7a00] to-orange-600 hover:opacity-95 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
             >
               <span>Search</span>
               <ArrowRight className="w-4 h-4" />
@@ -129,14 +138,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             {['4K Premium', 'Candy AI', 'Lovense Toys', '8K VR', 'Free Cams', 'NordVPN'].map((tag) => (
               <button
                 key={tag}
-                onClick={() => setSearchQuery(tag)}
+                type="button"
+                onClick={() => {
+                  setSearchQuery(tag);
+                  const el = document.getElementById('directory-grid');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800/80 hover:bg-[#ff7a00]/10 hover:text-[#ff7a00] border border-zinc-200 dark:border-zinc-700/50 transition-colors"
               >
                 {tag}
               </button>
             ))}
           </div>
-        </div>
+        </form>
 
         {/* Categories Showcase Grid (Large Cards) */}
         <div className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

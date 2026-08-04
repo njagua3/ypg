@@ -14,7 +14,10 @@ import {
   Moon,
   Flame,
   CheckCircle2,
-  Tv
+  Tv,
+  LogIn,
+  UserPlus,
+  LogOut
 } from 'lucide-react';
 import { User as UserType } from '../types';
 import { LOGO_DATA_URI } from '../assets/logoData';
@@ -30,6 +33,8 @@ interface HeaderProps {
   onOpenCompare: () => void;
   onOpenSubmitListing: () => void;
   onOpenSearch: () => void;
+  onOpenAuthModal: (mode?: 'signin' | 'signup') => void;
+  onSignOut: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -42,7 +47,9 @@ export const Header: React.FC<HeaderProps> = ({
   compareCount,
   onOpenCompare,
   onOpenSubmitListing,
-  onOpenSearch
+  onOpenSearch,
+  onOpenAuthModal,
+  onSignOut
 }) => {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
@@ -160,16 +167,27 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Submit Listing Button */}
             <button
               onClick={onOpenSubmitListing}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-lg transition-colors"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200/80 dark:border-zinc-700/80 rounded-xl transition-all"
             >
               <PlusCircle className="w-3.5 h-3.5 text-[#ff7a00]" />
               <span>Submit Site</span>
             </button>
 
+            {/* Single Sign In Button for Visitors */}
+            {currentUser.role === 'visitor' && (
+              <button
+                onClick={() => onOpenAuthModal('signin')}
+                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#ff7a00] to-orange-600 hover:opacity-95 rounded-xl shadow-sm shadow-[#ff7a00]/20 transition-all"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </button>
+            )}
+
             {/* Theme Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
               title="Toggle theme"
             >
               {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
@@ -203,14 +221,29 @@ export const Header: React.FC<HeaderProps> = ({
 
               {showRoleDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-700/80 rounded-2xl shadow-xl p-2 z-50 text-xs">
-                  <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
-                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">{currentUser.name}</p>
-                    <p className="text-[11px] text-zinc-500 truncate">{currentUser.email}</p>
+                  <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">{currentUser.name}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">{currentUser.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="py-2 border-b border-zinc-100 dark:border-zinc-800">
+                    <button
+                      onClick={() => {
+                        onOpenAuthModal('signin');
+                        setShowRoleDropdown(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-semibold"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-[#ff7a00]" />
+                      <span>Sign In / Register</span>
+                    </button>
                   </div>
 
                   <div className="py-2">
                     <p className="px-3 text-[10px] uppercase font-bold text-zinc-400 mb-1">
-                      Switch Active Role (Demo)
+                      Quick Switch (Demo Roles)
                     </p>
 
                     <button
@@ -286,6 +319,21 @@ export const Header: React.FC<HeaderProps> = ({
                         className="w-full text-left px-3 py-2 rounded-lg bg-[#ff7a00] text-white font-semibold hover:bg-orange-600 text-center block shadow-sm"
                       >
                         Open Admin Panel
+                      </button>
+                    </div>
+                  )}
+
+                  {currentUser.id !== 'usr-visitor-1' && (
+                    <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                      <button
+                        onClick={() => {
+                          onSignOut();
+                          setShowRoleDropdown(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 font-semibold text-center flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
                       </button>
                     </div>
                   )}

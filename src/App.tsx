@@ -14,6 +14,7 @@ import { BloggerDashboard } from './components/BloggerDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
 import { SEOModal } from './components/SEOModal';
 import { SupabaseModal } from './components/SupabaseModal';
+import { AuthModal } from './components/AuthModal';
 import { StaticPages } from './components/StaticPages';
 import { Footer } from './components/Footer';
 import {
@@ -65,14 +66,20 @@ export default function App() {
   const [listings, setListings] = useState<Listing[]>(INITIAL_LISTINGS);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [blogs, setBlogs] = useState<BlogPost[]>(INITIAL_BLOGS);
-  const [currentUser, setCurrentUser] = useState<User>({
-    id: 'usr-visitor-1',
-    name: 'Guest Visitor',
-    email: 'guest@yourpornguy.com',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
-    role: 'visitor',
-    bloggerStatus: 'none',
-    createdAt: '2026-08-01'
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    try {
+      const saved = localStorage.getItem('ypg_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      id: 'usr-visitor-1',
+      name: 'Guest Visitor',
+      email: 'guest@yourpornguy.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
+      role: 'visitor',
+      bloggerStatus: 'none',
+      createdAt: '2026-08-01'
+    };
   });
 
   // Modal States
@@ -91,6 +98,8 @@ export default function App() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showSEOModal, setShowSEOModal] = useState(false);
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin');
 
   // Blogger & Admin Data State
   const INITIAL_ADMIN_STATS = {
@@ -121,6 +130,20 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Global Keyboard Shortcuts (Cmd+K / Ctrl+K for quick search, Escape to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearchModal((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setShowSearchModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Safely fetch initial data if backend API is present, gracefully retaining fallback mock data if static
   const fetchData = async () => {
@@ -275,6 +298,10 @@ export default function App() {
 
     // Update state immediately for flawless UI transition
     setCurrentUser(targetUser);
+    try {
+      localStorage.setItem('ypg_current_user', JSON.stringify(targetUser));
+    } catch (e) {}
+
     if (targetUser.role === 'admin') {
       setCurrentTab('admin_dashboard');
     } else if (targetUser.role === 'blogger') {
@@ -294,6 +321,38 @@ export default function App() {
     } catch (err) {
       // Ignored for static deployments
     }
+  };
+
+  // Auth Modal Success Handler
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('ypg_current_user', JSON.stringify(user));
+    } catch (e) {}
+
+    if (user.role === 'admin') {
+      setCurrentTab('admin_dashboard');
+    } else if (user.role === 'blogger') {
+      setCurrentTab('blogger_dashboard');
+    }
+  };
+
+  // Sign Out Handler
+  const handleSignOut = () => {
+    const guestUser: User = {
+      id: 'usr-visitor-1',
+      name: 'Guest Visitor',
+      email: 'guest@yourpornguy.com',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
+      role: 'visitor',
+      bloggerStatus: 'none',
+      createdAt: '2026-08-01'
+    };
+    setCurrentUser(guestUser);
+    try {
+      localStorage.removeItem('ypg_current_user');
+    } catch (e) {}
+    setCurrentTab('home');
   };
 
   // Open Listing Details
@@ -492,6 +551,11 @@ export default function App() {
         onOpenCompare={() => setShowCompareModal(true)}
         onOpenSubmitListing={() => setShowSubmitModal(true)}
         onOpenSearch={() => setShowSearchModal(true)}
+        onOpenAuthModal={(m) => {
+          setAuthModalMode(m || 'signin');
+          setShowAuthModal(true);
+        }}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Body Routing */}
@@ -517,9 +581,13 @@ export default function App() {
               
               {/* Directory Filter Bar */}
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-xl font-black text-zinc-900 dark:text-white">
-                    {selectedCategory ? categories.find(c => c.id === selectedCategory)?.name || 'Directory' : 'Top Verified Listings'}
+                    {searchQuery
+                      ? `Search: "${searchQuery}"`
+                      : selectedCategory
+                      ? categories.find(c => c.id === selectedCategory)?.name || 'Directory'
+                      : 'Top Verified Listings'}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-800 text-xs font-bold text-zinc-600 dark:text-zinc-300">
                     {displayedListings.length} Sites
@@ -527,12 +595,23 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="px-3 py-1.5 text-xs font-bold text-[#ff7a00] bg-[#ff7a00]/10 rounded-xl hover:bg-[#ff7a00]/20 transition-colors flex items-center gap-1"
+                    >
+                      <span>Clear Search</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   {selectedCategory && (
                     <button
                       onClick={() => setSelectedCategory('')}
-                      className="px-3 py-1.5 text-xs font-bold text-[#ff7a00] bg-[#ff7a00]/10 rounded-xl hover:bg-[#ff7a00]/20 transition-colors"
+                      className="px-3 py-1.5 text-xs font-bold text-[#ff7a00] bg-[#ff7a00]/10 rounded-xl hover:bg-[#ff7a00]/20 transition-colors flex items-center gap-1"
                     >
-                      Clear Category
+                      <span>Clear Category</span>
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   )}
 
@@ -550,19 +629,44 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Grid of Listing Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayedListings.map((listing) => (
-                  <ListingCard
-                    key={listing.id}
-                    listing={listing}
-                    onOpenDetails={handleOpenListingDetails}
-                    onSelectForCompare={handleSelectForCompare}
-                    isCompared={compareListings.some((c) => c.id === listing.id)}
-                    onAffiliateClick={handleAffiliateClick}
-                  />
-                ))}
-              </div>
+              {/* Grid of Listing Cards or Empty Search Result */}
+              {displayedListings.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {displayedListings.map((listing) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      onOpenDetails={handleOpenListingDetails}
+                      onSelectForCompare={handleSelectForCompare}
+                      isCompared={compareListings.some((c) => c.id === listing.id)}
+                      onAffiliateClick={handleAffiliateClick}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 space-y-4 my-6">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-[#ff7a00]/10 flex items-center justify-center text-[#ff7a00]">
+                    <Search className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-black text-zinc-900 dark:text-white">
+                    No sites found matching "{searchQuery}"
+                  </h3>
+                  <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                    Try searching for popular terms like "VR", "Candy AI", "Cams", "Toys", or browse through directory categories.
+                  </p>
+                  <div className="pt-2 flex justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('');
+                      }}
+                      className="px-5 py-2.5 bg-gradient-to-r from-[#ff7a00] to-orange-600 text-white text-xs font-extrabold rounded-xl shadow-md hover:opacity-95 transition-all"
+                    >
+                      Show All Listings
+                    </button>
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
@@ -772,46 +876,138 @@ export default function App() {
 
       <SupabaseModal isOpen={showSupabaseModal} onClose={() => setShowSupabaseModal(false)} />
 
+      {/* Sign In & Sign Up Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authModalMode}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
       {/* Quick Search Overlay Modal */}
       {showSearchModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/80 backdrop-blur-md">
-          <div className="w-full max-w-xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-4 shadow-2xl space-y-3">
-            <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-3">
-              <Search className="w-5 h-5 text-[#ff7a00]" />
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-16 p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+          onClick={() => setShowSearchModal(false)}
+        >
+          <div
+            className="w-full max-w-xl bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 rounded-3xl p-5 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setShowSearchModal(false);
+                setCurrentTab('home');
+                setTimeout(() => {
+                  const el = document.getElementById('directory-grid');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              className="flex items-center gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3"
+            >
+              <Search className="w-5 h-5 text-[#ff7a00] shrink-0" />
               <input
                 type="text"
                 autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search over 15,000 adult sites..."
-                className="w-full text-base font-bold text-zinc-900 dark:text-white bg-transparent focus:outline-none"
+                placeholder="Type to search 15,000+ sites (Press Enter)..."
+                className="w-full text-base font-bold text-zinc-900 dark:text-white bg-transparent focus:outline-none placeholder-zinc-400 dark:placeholder-zinc-500"
               />
-              <button onClick={() => setShowSearchModal(false)} className="text-zinc-400">
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs font-semibold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 px-2 py-1 rounded"
+                >
+                  Clear
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowSearchModal(false)}
+                className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg"
+              >
                 <X className="w-5 h-5" />
               </button>
-            </div>
+            </form>
 
-            <div className="space-y-2 max-h-80 overflow-y-auto">
-              {displayedListings.slice(0, 5).map((l) => (
-                <div
-                  key={l.id}
-                  onClick={() => {
-                    handleOpenListingDetails(l);
-                    setShowSearchModal(false);
-                  }}
-                  className="p-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 cursor-pointer flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={l.logoUrl} alt={l.name} className="w-8 h-8 rounded-lg object-cover bg-black" />
-                    <div>
-                      <h4 className="text-xs font-bold text-zinc-900 dark:text-white">{l.name}</h4>
-                      <p className="text-[10px] text-zinc-500">{l.categoryName}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-black text-emerald-500">{l.editorScore}/100</span>
+            {/* Empty Query - Popular Tags */}
+            {!searchQuery && (
+              <div className="space-y-2 py-2">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Popular Quick Searches</p>
+                <div className="flex flex-wrap gap-2">
+                  {['4K Premium', 'Candy AI', 'Lovense Toys', '8K VR', 'Free Cams', 'NordVPN'].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSearchQuery(tag)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-[#ff7a00]/10 hover:text-[#ff7a00] border border-zinc-200/80 dark:border-zinc-700/60 transition-colors"
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* Results List */}
+            {displayedListings.length > 0 ? (
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <div className="flex items-center justify-between text-xs text-zinc-400 font-semibold px-1 pb-1">
+                  <span>Matching Sites</span>
+                  <span>{displayedListings.length} found</span>
+                </div>
+                {displayedListings.slice(0, 6).map((l) => (
+                  <div
+                    key={l.id}
+                    onClick={() => {
+                      handleOpenListingDetails(l);
+                      setShowSearchModal(false);
+                    }}
+                    className="p-3 rounded-2xl hover:bg-zinc-100 dark:hover:bg-zinc-800/80 cursor-pointer flex items-center justify-between group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src={l.logoUrl} alt={l.name} className="w-9 h-9 rounded-xl object-cover bg-black border border-zinc-200 dark:border-zinc-800" />
+                      <div>
+                        <h4 className="text-xs font-extrabold text-zinc-900 dark:text-white group-hover:text-[#ff7a00] transition-colors">
+                          {l.name}
+                        </h4>
+                        <p className="text-[10px] text-zinc-500">{l.categoryName}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                      {l.editorScore}/100
+                    </span>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => {
+                    setShowSearchModal(false);
+                    setCurrentTab('home');
+                    setTimeout(() => {
+                      const el = document.getElementById('directory-grid');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }, 50);
+                  }}
+                  className="w-full mt-2 py-2.5 text-center text-xs font-bold text-[#ff7a00] bg-[#ff7a00]/10 hover:bg-[#ff7a00]/20 rounded-xl transition-colors"
+                >
+                  View All {displayedListings.length} Results in Directory →
+                </button>
+              </div>
+            ) : (
+              searchQuery && (
+                <div className="py-8 text-center space-y-2">
+                  <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
+                    No results for "{searchQuery}"
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    Try searching for "Cams", "VR", "Anime", "Candy AI" or browse categories.
+                  </p>
+                </div>
+              )
+            )}
           </div>
         </div>
       )}
