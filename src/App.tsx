@@ -92,9 +92,26 @@ export default function App() {
   const [showSEOModal, setShowSEOModal] = useState(false);
   const [showSupabaseModal, setShowSupabaseModal] = useState(false);
 
-  // Blogger & Admin Data
+  // Blogger & Admin Data State
+  const INITIAL_ADMIN_STATS = {
+    totalUsers: INITIAL_USERS.length + 1416,
+    approvedBloggers: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'approved').length + 42,
+    pendingBloggers: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'pending').length,
+    totalListings: INITIAL_LISTINGS.length,
+    pendingListings: INITIAL_LISTINGS.filter((l) => l.isApproved === false).length,
+    totalBlogs: INITIAL_BLOGS.length,
+    validClicks: 72100,
+    totalClicks: 84920,
+    totalPaidOut: 1698.40,
+    users: INITIAL_USERS,
+    listings: INITIAL_LISTINGS,
+    withdrawals: INITIAL_WITHDRAWALS,
+    pendingWithdrawals: INITIAL_WITHDRAWALS.filter((w) => w.status === 'pending'),
+    settings: INITIAL_SETTINGS
+  };
+
   const [bloggerDashboardData, setBloggerDashboardData] = useState<any>(null);
-  const [adminStats, setAdminStats] = useState<any>(null);
+  const [adminStats, setAdminStats] = useState<any>(INITIAL_ADMIN_STATS);
 
   // Apply dark mode class to root HTML
   useEffect(() => {
@@ -159,30 +176,34 @@ export default function App() {
       fetch('/api/blogger/dashboard', { headers: { 'x-user-id': currentUser.id } })
         .then((res) => {
           if (!res.ok) throw new Error('API unreachable');
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) throw new Error('Not JSON');
           return res.json();
         })
         .then((data) => setBloggerDashboardData(data))
         .catch(() => {
+          const isPending = currentUser.id === 'usr-blogger-pending' || currentUser.bloggerStatus === 'pending';
           const matchedProfile = INITIAL_BLOGGER_PROFILES.find((p) => p.userId === currentUser.id) || {
             userId: currentUser.id,
             name: currentUser.name,
             email: currentUser.email,
             avatarUrl: currentUser.avatarUrl,
-            status: currentUser.bloggerStatus || 'pending',
-            bio: currentUser.bio || 'Content creator & adult industry blogger.',
-            totalViews: 12400,
-            totalClicks: 1850,
-            ctr: 14.9,
-            estimatedEarnings: 37.00,
-            availableBalance: 25.00,
-            pendingEarnings: 12.00,
-            paidEarnings: 80.00,
+            status: isPending ? 'pending' : 'approved',
+            bio: currentUser.bio || (isPending ? 'Adult gaming reviewer and VR hardware test pilot.' : 'Content creator & adult industry blogger.'),
+            totalViews: isPending ? 0 : 24000,
+            totalClicks: isPending ? 0 : 3090,
+            ctr: isPending ? 0 : 12.8,
+            estimatedEarnings: isPending ? 0 : 61.80,
+            availableBalance: isPending ? 0 : 46.80,
+            pendingEarnings: isPending ? 0 : 15.00,
+            paidEarnings: isPending ? 0 : 120.00,
             registrationDate: currentUser.createdAt || '2026-08-01'
           };
+          
           setBloggerDashboardData({
             profile: matchedProfile,
-            blogs: blogs.filter((b) => b.authorId === currentUser.id || currentUser.role === 'blogger'),
-            withdrawals: INITIAL_WITHDRAWALS.filter((w) => w.userId === currentUser.id || currentUser.id === 'usr-blogger-1'),
+            blogs: isPending ? blogs.filter((b) => b.authorId === currentUser.id) : blogs.filter((b) => b.authorId === currentUser.id || b.authorId === 'usr-blogger-1'),
+            withdrawals: isPending ? [] : INITIAL_WITHDRAWALS.filter((w) => w.userId === currentUser.id || currentUser.id === 'usr-blogger-1'),
             recentClicks: [],
             payPerClickRate: INITIAL_SETTINGS.payPerClickRate,
             minimumWithdrawal: INITIAL_SETTINGS.minimumWithdrawal
@@ -192,80 +213,86 @@ export default function App() {
       fetch('/api/admin/stats', { headers: { 'x-user-id': currentUser.id } })
         .then((res) => {
           if (!res.ok) throw new Error('API unreachable');
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) throw new Error('Not JSON');
           return res.json();
         })
         .then((data) => setAdminStats(data))
         .catch(() => {
-          setAdminStats({
-            totalUsers: INITIAL_USERS.length + 1416,
-            approvedBloggersCount: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'approved').length + 42,
-            pendingBloggersCount: INITIAL_USERS.filter((u) => u.role === 'blogger' && u.bloggerStatus === 'pending').length,
-            totalListingsCount: listings.length,
-            pendingListingsCount: listings.filter((l) => l.isApproved === false).length,
-            totalBlogsCount: blogs.length,
-            totalClicks: 84920,
-            totalPayouts: 1698.40,
-            users: INITIAL_USERS,
-            listings: listings,
-            withdrawals: INITIAL_WITHDRAWALS,
-            settings: INITIAL_SETTINGS
-          });
+          setAdminStats(INITIAL_ADMIN_STATS);
         });
     }
   }, [currentTab, currentUser, blogs, listings]);
 
-  // Handle Role Switching with instantaneous local fallback for static hosts (Vercel)
+  // Handle Role Switching with instantaneous client-side updates for zero-delay response
   const handleSwitchRole = async (role: 'visitor' | 'blogger' | 'admin' | 'pending_blogger') => {
-    let targetRole = role === 'pending_blogger' ? 'blogger' : role;
-    let email = undefined;
+    let targetUser: User;
+    
     if (role === 'pending_blogger') {
-      email = 'marcus.vance@creator.org';
+      targetUser = INITIAL_USERS.find((u) => u.id === 'usr-blogger-pending') || {
+        id: 'usr-blogger-pending',
+        name: 'Marcus Vance',
+        email: 'marcus.vance@creator.org',
+        avatarUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=120&h=120&q=80',
+        role: 'blogger',
+        bloggerStatus: 'pending',
+        bio: 'Adult gaming reviewer and VR hardware test pilot.',
+        createdAt: '2026-08-03'
+      };
     } else if (role === 'blogger') {
-      email = 'alex.mercer@blogger.com';
+      targetUser = INITIAL_USERS.find((u) => u.id === 'usr-blogger-1') || {
+        id: 'usr-blogger-1',
+        name: 'Alex Mercer',
+        email: 'alex.mercer@blogger.com',
+        avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80',
+        role: 'blogger',
+        bloggerStatus: 'approved',
+        bio: 'Tech journalist, AI enthusiast, and adult industry analyst.',
+        createdAt: '2026-06-15'
+      };
     } else if (role === 'admin') {
-      email = 'admin@yourpornguy.com';
+      targetUser = INITIAL_USERS.find((u) => u.id === 'usr-admin-1') || {
+        id: 'usr-admin-1',
+        name: 'YPG System Admin',
+        email: 'admin@yourpornguy.com',
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80',
+        role: 'admin',
+        bloggerStatus: 'approved',
+        bio: 'Platform Operations Director',
+        createdAt: '2026-01-01'
+      };
+    } else {
+      targetUser = {
+        id: 'usr-visitor-1',
+        name: 'Guest Visitor',
+        email: 'guest@yourpornguy.com',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
+        role: 'visitor',
+        bloggerStatus: 'none',
+        createdAt: '2026-08-01'
+      };
     }
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: targetRole, email })
-      }).catch(() => null);
-
-      if (res && res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data && data.user) {
-          setCurrentUser(data.user);
-          if (data.user.role === 'admin') {
-            setCurrentTab('admin_dashboard');
-          } else if (data.user.role === 'blogger') {
-            setCurrentTab('blogger_dashboard');
-          } else {
-            setCurrentTab('home');
-          }
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('Backend login endpoint unavailable, applying local role switch:', err);
-    }
-
-    // Static client fallback (e.g., Vercel)
-    let fallbackUser = INITIAL_USERS.find((u) => {
-      if (role === 'pending_blogger') return u.id === 'usr-blogger-pending';
-      if (role === 'blogger') return u.id === 'usr-blogger-1';
-      if (role === 'admin') return u.id === 'usr-admin-1';
-      return u.id === 'usr-visitor-1';
-    }) || INITIAL_USERS[0];
-
-    setCurrentUser(fallbackUser);
-    if (fallbackUser.role === 'admin') {
+    // Update state immediately for flawless UI transition
+    setCurrentUser(targetUser);
+    if (targetUser.role === 'admin') {
       setCurrentTab('admin_dashboard');
-    } else if (fallbackUser.role === 'blogger') {
+    } else if (targetUser.role === 'blogger') {
       setCurrentTab('blogger_dashboard');
     } else {
       setCurrentTab('home');
+    }
+
+    // Optional background sync with backend server if available
+    try {
+      let targetRole = role === 'pending_blogger' ? 'blogger' : role;
+      await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: targetRole, email: targetUser.email })
+      });
+    } catch (err) {
+      // Ignored for static deployments
     }
   };
 
@@ -605,33 +632,82 @@ export default function App() {
           <AdminDashboard
             stats={adminStats}
             onApproveBlogger={async (id) => {
-              await fetch(`/api/admin/bloggers/${id}/approve`, { method: 'POST' });
-              const res = await fetch('/api/admin/stats');
-              setAdminStats(await res.json());
+              setAdminStats((prev: any) => {
+                if (!prev) return prev;
+                const updatedUsers = (prev.users || []).map((u: User) =>
+                  u.id === id ? { ...u, bloggerStatus: 'approved' as const, role: 'blogger' as const } : u
+                );
+                return {
+                  ...prev,
+                  users: updatedUsers,
+                  pendingBloggers: Math.max(0, (prev.pendingBloggers || 1) - 1),
+                  approvedBloggers: (prev.approvedBloggers || 0) + 1
+                };
+              });
+              try {
+                await fetch(`/api/admin/bloggers/${id}/approve`, { method: 'POST' });
+              } catch (err) {}
             }}
             onRejectBlogger={async (id) => {
-              await fetch(`/api/admin/bloggers/${id}/reject`, { method: 'POST' });
-              const res = await fetch('/api/admin/stats');
-              setAdminStats(await res.json());
+              setAdminStats((prev: any) => {
+                if (!prev) return prev;
+                const updatedUsers = (prev.users || []).map((u: User) =>
+                  u.id === id ? { ...u, bloggerStatus: 'rejected' as const } : u
+                );
+                return {
+                  ...prev,
+                  users: updatedUsers,
+                  pendingBloggers: Math.max(0, (prev.pendingBloggers || 1) - 1)
+                };
+              });
+              try {
+                await fetch(`/api/admin/bloggers/${id}/reject`, { method: 'POST' });
+              } catch (err) {}
             }}
             onApproveListing={async (id) => {
-              await fetch(`/api/admin/listings/${id}/approve`, { method: 'POST' });
-              const res = await fetch('/api/admin/stats');
-              setAdminStats(await res.json());
+              setAdminStats((prev: any) => {
+                if (!prev) return prev;
+                const updatedListings = (prev.listings || []).map((l: Listing) =>
+                  l.id === id ? { ...l, isApproved: true } : l
+                );
+                return {
+                  ...prev,
+                  listings: updatedListings,
+                  pendingListings: Math.max(0, (prev.pendingListings || 1) - 1)
+                };
+              });
+              try {
+                await fetch(`/api/admin/listings/${id}/approve`, { method: 'POST' });
+              } catch (err) {}
             }}
             onApproveWithdrawal={async (id) => {
-              await fetch(`/api/admin/withdrawals/${id}/approve`, { method: 'POST' });
-              const res = await fetch('/api/admin/stats');
-              setAdminStats(await res.json());
+              setAdminStats((prev: any) => {
+                if (!prev) return prev;
+                const updatedWithdrawals = (prev.withdrawals || []).map((w: WithdrawalRequest) =>
+                  w.id === id ? { ...w, status: 'approved' as const, processedAt: new Date().toISOString().split('T')[0] } : w
+                );
+                return {
+                  ...prev,
+                  withdrawals: updatedWithdrawals,
+                  pendingWithdrawals: updatedWithdrawals.filter((w: WithdrawalRequest) => w.status === 'pending')
+                };
+              });
+              try {
+                await fetch(`/api/admin/withdrawals/${id}/approve`, { method: 'POST' });
+              } catch (err) {}
             }}
             onUpdateSettings={async (newSettings) => {
-              await fetch('/api/admin/settings', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newSettings)
-              });
-              const res = await fetch('/api/admin/stats');
-              setAdminStats(await res.json());
+              setAdminStats((prev: any) => ({
+                ...prev,
+                settings: { ...prev.settings, ...newSettings }
+              }));
+              try {
+                await fetch('/api/admin/settings', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(newSettings)
+                });
+              } catch (err) {}
             }}
             onOpenSEOModal={() => setShowSEOModal(true)}
             onOpenSupabaseModal={() => setShowSupabaseModal(true)}

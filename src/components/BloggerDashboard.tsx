@@ -83,7 +83,7 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                 profile.status === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
               }`}>
-                {profile.status}
+                {profile.status === 'approved' ? 'Approved Blogger' : 'Pending Approval'}
               </span>
             </div>
             <p className="text-xs text-zinc-500">{profile.email} • Blogger Payout Rate: <strong className="text-[#ff7a00]">${payPerClickRate.toFixed(2)} / valid click</strong></p>
@@ -92,20 +92,36 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
 
         <div className="flex items-center gap-3">
           <button
-            onClick={onOpenCreateBlogModal}
-            className="px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold transition-colors flex items-center gap-1.5"
+            onClick={() => {
+              if (profile.status === 'pending') {
+                alert('Your blogger account application is currently pending admin review. You can publish articles once approved!');
+                return;
+              }
+              onOpenCreateBlogModal();
+            }}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+              profile.status === 'pending'
+                ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed'
+                : 'bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200'
+            }`}
           >
             <Plus className="w-4 h-4 text-[#ff7a00]" />
             <span>New Blog Post</span>
           </button>
 
           <button
-            onClick={() => setShowWithdrawModal(true)}
-            disabled={profile.availableBalance < minimumWithdrawal}
+            onClick={() => {
+              if (profile.status === 'pending') {
+                alert('Withdrawals are available after account approval.');
+                return;
+              }
+              setShowWithdrawModal(true);
+            }}
+            disabled={profile.status === 'pending' || profile.availableBalance < minimumWithdrawal}
             className={`px-5 py-2.5 rounded-xl text-white text-xs font-extrabold shadow-md transition-all flex items-center gap-2 ${
-              profile.availableBalance >= minimumWithdrawal
+              profile.status === 'approved' && profile.availableBalance >= minimumWithdrawal
                 ? 'bg-gradient-to-r from-[#ff7a00] to-orange-600 hover:opacity-95'
-                : 'bg-zinc-400 dark:bg-zinc-800 cursor-not-allowed opacity-60'
+                : 'bg-zinc-300 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-60'
             }`}
           >
             <Wallet className="w-4 h-4" />
@@ -113,6 +129,29 @@ export const BloggerDashboard: React.FC<BloggerDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Pending Blogger Alert Callout */}
+      {profile.status === 'pending' && (
+        <div className="p-6 rounded-3xl bg-amber-500/10 border-2 border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-500 shrink-0 mt-0.5">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-zinc-900 dark:text-white flex items-center gap-2">
+                Blogger Application Under Review
+              </h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 max-w-2xl leading-relaxed">
+                Your blogger account application (<strong>{profile.email}</strong>) is currently awaiting review by the YPG System Administrator.
+                Once approved, you will be able to publish articles, embed trackable affiliate links, and earn <strong>${payPerClickRate.toFixed(2)} per valid click</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-500 font-bold text-xs shrink-0 border border-amber-500/30">
+            Awaiting Approval
+          </div>
+        </div>
+      )}
 
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
