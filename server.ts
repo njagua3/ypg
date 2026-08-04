@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -33,8 +32,7 @@ import {
   SubmitListingPayload
 } from './src/types.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const rootDir = process.cwd();
 
 // Helper to sanitize Supabase URL
 function cleanSupabaseUrl(url: string): string {
@@ -55,7 +53,7 @@ const isSupabaseEnabled = Boolean(supabaseUrl && supabaseKey);
 export const supabaseServer = isSupabaseEnabled ? createClient(supabaseUrl, supabaseKey) : null;
 
 // Persistent state container with disk sync
-const DB_FILE = path.join(__dirname, 'data_store.json');
+const DB_FILE = path.join(rootDir, 'data_store.json');
 
 interface DatabaseState {
   categories: Category[];
